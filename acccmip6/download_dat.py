@@ -5,6 +5,7 @@ Created on Thu Sep  5 21:05:20 2019
 @author: Taufiq
 """
 from __future__ import unicode_literals
+from concurrent.futures import ThreadPoolExecutor, wait
 import urllib.request
 import os, sys
 import time
@@ -44,6 +45,37 @@ def dl_cmip6(durl, dir_path):
             urllib.request.urlretrieve(durl,durl.split('/')[len(durl.split('/'))-1],reporthook=dlControl)
         else:
             print("\n"+durl.split('/')[len(durl.split('/'))-1]+" already exists!\n")         
+
+
+def single_download(params):
+    global startTime
+    
+    url, dir_path, passed_urls, download_record = params
+    startTime = time.time()
+    try:
+        dl_cmip6(url, dir_path)
+        download_record['n']=download_record['n']+1
+        passed_urls.append(url)
+    except TooSlowException:
+        print("Removing file . . .\n")
+        os.remove(url.split('/')[len(url.split('/'))-1])
+        download_record['m']=download_record['m']+1
+        startTime = time.time()
+    except KeyboardInterrupt:
+        print("\nInterrupted! Removing file . . .\n")
+        os.remove(url.split('/')[len(url.split('/'))-1])
+        return
+    except urllib.error.HTTPError:
+        download_record['m']=download_record['m']+1
+        download_record['manual']=download_record['manual']+1
+        print("\n"+color.RED+"<<401 Unauthorized: restricted access!!>>"+color.END+"\n")
+        print(color.UNDERLINE+"From ESGF:"+color.END+" Before you can download this data, you have to join a data access control group \nsince acknowledgement of a policy is a condition for this data download.")
+        print("\nRequires registration/manual download . . . :(")
+        pass
+    except:
+        download_record['m']=download_record['m']+1
+        os.remove(url.split('/')[len(url.split('/'))-1])
+        pass
     
 
 def DownloadCmip6(**kwargs):
@@ -61,6 +93,10 @@ def DownloadCmip6(**kwargs):
     path = kwargs.get('path', None)
     skip = kwargs.get('skip', None)
     cr = kwargs.get('cr', None)
+
+    # multi-thread kwarg
+    multi = kwargs.get('multi', False)
+    workers = kwargs.get('workers', None)
     
     search=SearchDB()
     if (_check == 'Yes') or (_check == 'yes'):
@@ -192,36 +228,31 @@ def DownloadCmip6(**kwargs):
         os.makedirs(str(dir_path))
         
     os.chdir(dir_path) 
-    n = 0
-    m = 0
-    manual = 0
+
+    download_record = {
+        'n': 0,
+        'm': 0,
+        'manual': 0
+    }
+
     passed_urls=[]
-    for url in links:
-        startTime = time.time()
-        try:
-            dl_cmip6(url, dir_path)
-            n=n+1
-            passed_urls.append(url)
-        except TooSlowException:
-            print("Removing file . . .\n")
-            os.remove(url.split('/')[len(url.split('/'))-1])
-            m=m+1
-            startTime = time.time()
-        except KeyboardInterrupt:
-            print("\nInterrupted! Removing file . . .\n")
-            os.remove(url.split('/')[len(url.split('/'))-1])
-            break
-        except urllib.error.HTTPError:
-            m=m+1
-            manual=manual+1
-            print("\n"+color.RED+"<<401 Unauthorized: restricted access!!>>"+color.END+"\n")
-            print(color.UNDERLINE+"From ESGF:"+color.END+" Before you can download this data, you have to join a data access control group \nsince acknowledgement of a policy is a condition for this data download.")
-            print("\nRequires registration/manual download . . . :(")
-            pass
-        except:
-            m=m+1
-            os.remove(url.split('/')[len(url.split('/'))-1])
-            pass
+
+    # ! multi-thread
+    if multi:
+        pool = ThreadPoolExecutor(max_workers=workers)
+        params = [(url, dir_path, passed_urls, download_record) for url in links]
+
+        futures = pool.map(single_download, params)
+
+        wait(futures)
+    else:
+        for url in links:
+            single_download(url, dir_path, passed_urls, download_record)
+    
+    n = download_record['n']
+    m = download_record['m']
+    manual = download_record['manual']
+        
     print("\nFinished downloading.")
     print("\n\nDownloaded ",n," out of ",n+m," files.")
     if (m>0):

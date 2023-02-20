@@ -1,5 +1,7 @@
 import argparse
 
+import os
+
 from acccmip6.access_cm import SearchCmip6
 from acccmip6.download_dat import DownloadCmip6
 from acccmip6.utilities.util import _check_list
@@ -24,6 +26,10 @@ def main():
     parser.add_argument("-time", help="Description: yes to print out avalable time periods", default=None)
     parser.add_argument("-skip", help="Skip any item in your download", default=None)
     parser.add_argument("-serv", help="Set user-defined server", default=None)
+
+    # add multi-thread
+    parser.add_argument("-multi", help="Set using multi thread download, only available in downloading data. Set it True to enable.", default=False)
+    parser.add_argument("-workers", help="Multi-thread download workders.", default=os.cpu_count())
 	
     args = parser.parse_args()
     model = _check_list(args.m)
@@ -42,11 +48,14 @@ def main():
     dl_dir = args.dir
     skipped = args.skip
     server = args.serv
+    workers = int(args.workers)
+
+    multi_thread = args.multi == 'True'
     
     if (out == 'S'):
         SearchCmip6(model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, check=check, desc=desc, year=year, time=time, rlzn=rlzn, node=node, skip=skipped, cr=cr, set_server=server)
-    elif (out == 'D'):
-        DownloadCmip6(model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, check=check, path=dl_dir, rlzn=rlzn, node=node, skip=skipped, year=year, cr=cr)
     elif (out == 'M'):
         SearchCmip6(module='on', model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, node=node)
+    elif (out == 'D'):
+        DownloadCmip6(model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, check=check, path=dl_dir, rlzn=rlzn, node=node, skip=skipped, year=year, cr=cr, multi=multi_thread, workers=workers)
         

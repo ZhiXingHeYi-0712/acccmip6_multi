@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
-with open(path.join(here, 'README.rst'), encoding='utf-8') as readme_file:
+with open(path.join(here, 'README.md'), encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 requirements = [
@@ -23,13 +23,13 @@ test_requirements = [
 ]
 
 setup(
-    name='acccmip6',
-    version='5.3.0',
-    description="Package for accessing CMIP6 database in real-time",
+    name='acccmip6_multi',
+    version='1.0.0',
+    description="Package for accessing CMIP6 database in real-time, download in multi-thread way",
     long_description=readme,
-    author="Taufiq Hassan",
-    author_email='taufiq.hassanmozumder@email.ucr.edu',
-    url='https://github.com/TaufiqHassan/acccmip6',
+    author="ZhiXingHeYi-0712",
+    author_email='Lihao.0712@outlook.com',
+    url='https://github.com/ZhiXingHeYi-0712/acccmip6_multi',
     packages=find_packages(exclude=['docs', 'tests']),
     package_data = {
             'utilities':['data/*.xlsx'],
