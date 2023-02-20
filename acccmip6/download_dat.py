@@ -242,9 +242,9 @@ def DownloadCmip6(**kwargs):
         pool = ThreadPoolExecutor(max_workers=workers)
         params = [(url, dir_path, passed_urls, download_record) for url in links]
 
-        futures = pool.map(single_download, params)
+        pool.map(single_download, params)
 
-        wait(futures)
+        pool.shutdown(wait=True, cancel_futures=False)
     else:
         for url in links:
             single_download(url, dir_path, passed_urls, download_record)
