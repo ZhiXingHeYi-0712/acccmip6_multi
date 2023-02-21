@@ -40,7 +40,7 @@ def dlControl(count, blockSize, totalSize):
 
 def dl_cmip6(durl, dir_path):
         
-        if (not os.path.exists(dir_path / durl.split('/')[len(durl.split('/'))-1])):
+        if (not os.path.exists(durl.split('/')[len(durl.split('/'))-1])):
             print("\n\n"+durl.split('/')[len(durl.split('/'))-1]+" is available!\n")
             urllib.request.urlretrieve(durl,durl.split('/')[len(durl.split('/'))-1],reporthook=dlControl)
         else:
