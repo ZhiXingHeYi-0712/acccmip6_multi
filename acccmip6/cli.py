@@ -20,7 +20,7 @@ def main():
     parser.add_argument("-n", help="Output node", default=None)
     parser.add_argument("-rlzn", help="Select realization", default=None)
     parser.add_argument("-cr", help="Select common realizations", action='store_true', default=None)
-    parser.add_argument("-yr", help="Select year", default=None)
+    parser.add_argument("-yr", help="Select year, will be ignored when downloading, please use -starttime and -endtime instead.", default=None)
     parser.add_argument("-c", help="Checker: yes to check inputs", default=None)
     parser.add_argument("-desc", help="Description: yes to print out experiment description", default=None)
     parser.add_argument("-time", help="Description: yes to print out avalable time periods", default=None)
@@ -30,6 +30,10 @@ def main():
     # add multi-thread
     parser.add_argument("-multi", help="Set using multi thread download, only available in downloading data. Set it True to enable.", default=False)
     parser.add_argument("-workers", help="Multi-thread download workders.", default=os.cpu_count())
+
+    # add time range
+    parser.add_argument("-starttime", help="data start year, only available in downloading.")
+    parser.add_argument("-endtime", help="data end year, only available in downloading.")
 	
     args = parser.parse_args()
     model = _check_list(args.m)
@@ -50,12 +54,18 @@ def main():
     server = args.serv
     workers = int(args.workers)
 
+    start_year = int(args.starttime)
+    end_year   = int(args.endtime)
+
     multi_thread = args.multi == 'True'
+
+    if start_year > end_year:
+        raise Exception('Start year should be earlier than end year.')
     
     if (out == 'S'):
         SearchCmip6(model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, check=check, desc=desc, year=year, time=time, rlzn=rlzn, node=node, skip=skipped, cr=cr, set_server=server)
     elif (out == 'M'):
         SearchCmip6(module='on', model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, node=node)
     elif (out == 'D'):
-        DownloadCmip6(model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, check=check, path=dl_dir, rlzn=rlzn, node=node, skip=skipped, year=year, cr=cr, multi=multi_thread, workers=workers)
+        DownloadCmip6(model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, check=check, path=dl_dir, rlzn=rlzn, node=node, skip=skipped, year=year, cr=cr, multi=multi_thread, workers=workers, start_year=start_year, end_year=end_year)
         

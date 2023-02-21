@@ -9,11 +9,33 @@ from concurrent.futures import ThreadPoolExecutor, wait
 import urllib.request
 import os, sys
 import time
+import numpy as np
 from pathlib import Path
 
 from acccmip6.utilities.util import color, _dir_path, TooSlowException, convertBToMb, _realizations
 from acccmip6.utilities.util import _get_rlzn_links, _manual_wget, HidePrint, _get_skipped_links
 from acccmip6.utilities.c6db import SearchDB
+
+
+def getTimeRange(start_year, end_year, year_list):
+    year_list = [int(y) for y in year_list]
+    year_list.sort()
+    year_list = np.array(year_list)
+
+    if np.all(start_year < year_list):
+        # too early
+        raise Exception('Start Time is too early!')
+    
+    if np.all(start_year > year_list):
+        return [year_list[-1]]
+    if np.all(end_year > year_list):
+        end_index = len(year_list) + 100
+    else:
+        end_index   = np.nonzero((end_year - year_list) < 0)[0][0]
+
+    start_index = np.nonzero((year_list - start_year) <= 0)[0][-1]
+
+    return list(year_list[start_index:end_index])
 
 
 def dlControl(count, blockSize, totalSize):
@@ -98,6 +120,10 @@ def DownloadCmip6(**kwargs):
     multi = kwargs.get('multi', False)
     workers = kwargs.get('workers', None)
     
+    # data range select
+    start_year = kwargs.get('start_year', None)
+    end_year   = kwargs.get('end_year', None)
+    
     search=SearchDB()
     if (_check == 'Yes') or (_check == 'yes'):
         search._set_check('Yes')
@@ -169,24 +195,13 @@ def DownloadCmip6(**kwargs):
         raise SystemExit
     
     
-    if (year!=None):
+    if (start_year!=None and end_year != None):
         info = search.get_info()
         yr_links=[]
-        if int(year)>0:
-            end_year = int(info.year[0])+int(year)
-        else:
-            end_year = int(info.year[len(info.year)-1])+int(year)
-        interested_years=[]
-        for y in info.year:
-            if (int(year)>0) and (int(y)-1<end_year):
-                interested_years.append(y)
-            elif (int(year)<0) and (end_year<int(y)+1):
-                interested_years.append(y)
-            else:
-                continue
+        interested_years=getTimeRange(start_year, end_year, info.year)
         for item in interested_years:
             for link in links:
-                if '_'+item in link:
+                if '_'+str(item) in link:
                     yr_links.append(link)
         links = yr_links
     
