@@ -32,8 +32,8 @@ def main():
     parser.add_argument("-workers", help="Multi-thread download workders.", default=os.cpu_count())
 
     # add time range
-    parser.add_argument("-starttime", help="data start year, only available in downloading.")
-    parser.add_argument("-endtime", help="data end year, only available in downloading.")
+    parser.add_argument("-starttime", help="data start year, only available in downloading.", default=None)
+    parser.add_argument("-endtime", help="data end year, only available in downloading.", default=None)
 	
     args = parser.parse_args()
     model = _check_list(args.m)
@@ -54,13 +54,16 @@ def main():
     server = args.serv
     workers = int(args.workers)
 
-    start_year = int(args.starttime)
-    end_year   = int(args.endtime)
+    try:
+        start_year = int(args.starttime)
+        end_year   = int(args.endtime)
+        if start_year > end_year:
+            raise Exception('Start year should be earlier than end year.')
+    except:
+        start_year = None
+        end_year = None
 
     multi_thread = args.multi == 'True'
-
-    if start_year > end_year:
-        raise Exception('Start year should be earlier than end year.')
     
     if (out == 'S'):
         SearchCmip6(model=model, experiment=experiment, variable=variable, frequency=frequency, realm=realm, check=check, desc=desc, year=year, time=time, rlzn=rlzn, node=node, skip=skipped, cr=cr, set_server=server)
